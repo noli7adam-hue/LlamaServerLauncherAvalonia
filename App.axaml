@@ -4,6 +4,7 @@
              xmlns:primitives="using:Avalonia.Controls.Primitives"
              xmlns:services="using:LlamaServerLauncher.Services"
              x:Class="LlamaServerLauncher.App"
+             Name="Corrallama"
              RequestedThemeVariant="Dark">
     <Application.Resources>
         <ResourceDictionary>
@@ -28,7 +29,7 @@
     <TrayIcon.Icons>
         <TrayIcons>
             <TrayIcon Icon="/llama-launcher.ico"
-                     ToolTipText="Llama Server Launcher" />
+                     ToolTipText="Corrallama" />
         </TrayIcons>
     </TrayIcon.Icons>
 </Application>

@@ -51,7 +51,7 @@
   </resheader>
 
   <data name="WindowTitle" xml:space="preserve">
-    <value>llama-server launcher</value>
+    <value>Corrallama</value>
   </data>
   <data name="ServerControl" xml:space="preserve">
     <value>Server Control</value>

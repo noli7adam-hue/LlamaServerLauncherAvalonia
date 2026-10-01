@@ -19,7 +19,7 @@ This section holds the minimum needed to launch: what to run it with, what to ru
 
 > Selecting an `mmproj-*.gguf` projector as the main model raises a warning — that file belongs in the separate **MMProj** field on the **Options** tab.
 
-Path fields keep a history: the **∨** button to the right of a field lists previously entered values, and the bin button next to it clears the field.
+Path fields keep a history: the arrow at the right edge of a field lists previously entered values, and the cross next to it clears the field. The cross shows up only when there is something to clear.
 
 ## HuggingFace
 

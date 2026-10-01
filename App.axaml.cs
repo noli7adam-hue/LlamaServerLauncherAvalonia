@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -22,6 +23,9 @@ public partial class App : Application
     private NativeMenu? _trayMenu;
     private MainWindow? _mainWindow;
     private MainViewModel? _viewModel;
+    private bool _mainWindowReady;
+
+    private static readonly TimeSpan SplashTimeout = TimeSpan.FromSeconds(15);
 
     public static SingleInstanceService? SingleInstance { get; set; }
 
@@ -87,125 +91,132 @@ public partial class App : Application
         {
             UiScaleService.Install();
 
-            _mainWindow = new MainWindow();
-            _viewModel = new MainViewModel();
-            _mainWindow.DataContext = _viewModel;
-            desktop.MainWindow = _mainWindow;
+            var splash = new SplashWindow();
+            splash.Show();
 
-            _mainWindow.Closed += (s, e) => _viewModel?.Cleanup();
-
-            var showCmd = new RelayCommand(_ =>
-            {
-                _mainWindow!.Show();
-                _mainWindow.WindowState = WindowState.Normal;
-                _mainWindow.Activate();
-            });
-
-            var closeCmd = new RelayCommand(async _ =>
-            {
-                if (_viewModel!.HasAnyRunningInstances)
-                {
-                    var wasHidden = !_mainWindow!.IsVisible;
-                    if (wasHidden)
-                    {
-                        _mainWindow.Show();
-                        _mainWindow.WindowState = WindowState.Normal;
-                    }
-
-                    var result = await MessageBox.ShowAsync(
-                        _mainWindow,
-                        LocalizedStrings.Instance.ConfirmCloseMessage,
-                        LocalizedStrings.Instance.ConfirmCloseTitle,
-                        MessageBoxButtons.YesNoCancel,
-                        MessageBoxIcon.Question);
-
-                    if (wasHidden)
-                    {
-                        _mainWindow.Hide();
-                    }
-
-                    if (result != MessageBoxResult.Yes)
-                        return;
-
-                    await _viewModel.StopAllInstancesAsync();
-                }
-
-                _mainWindow!.IsClosingFromTray = true;
-                _mainWindow.Close();
-            });
-
-            var icons = TrayIcon.GetIcons(this);
-            if (icons != null && icons.Count > 0)
-            {
-                _trayIcon = icons[0];
-
-                _trayIcon.Clicked += (s, e) =>
-                {
-                    var now = DateTime.Now;
-                    var diff = now - _lastClickTime;
-                    _lastClickTime = now;
-
-                    if (diff.TotalMilliseconds < 500)
-                    {
-                        _mainWindow!.Show();
-                        _mainWindow.WindowState = WindowState.Normal;
-                        _mainWindow.Activate();
-                    }
-                };
-
-                BuildTrayMenu(closeCmd);
-
-                LocalizedStrings.CultureChanged += () => BuildTrayMenu(closeCmd);
-
-                _viewModel.RequestTrayMenuRebuild += () => BuildTrayMenu(closeCmd);
-
-                _viewModel.PropertyChanged += (s, e) =>
-                {
-                    if (e.PropertyName == nameof(ViewModels.MainViewModel.WindowTitleWithProfile) ||
-                        e.PropertyName == nameof(ViewModels.MainViewModel.SelectedProfile))
-                    {
-                        BuildTrayMenu(closeCmd);
-                    }
-                };
-            }
-
-            _mainWindow.PropertyChanged += (s, e) =>
-            {
-                if (e.Property == Window.WindowStateProperty && _mainWindow!.WindowState == WindowState.Minimized && MainWindow.MinimizeToTray)
-                {
-                    _mainWindow.Hide();
-                }
-            };
-
-            _mainWindow.Show();
-
-            if (SingleInstance != null)
-            {
-                SingleInstance.ActivateRequested += () =>
-                {
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        _mainWindow!.Show();
-                        _mainWindow.WindowState = WindowState.Normal;
-                        _mainWindow.Activate();
-                    });
-                };
-
-                if (SingleInstance.ConsumePendingActivation())
-                {
-                    _mainWindow.Show();
-                    _mainWindow.WindowState = WindowState.Normal;
-                    _mainWindow.Activate();
-                }
-
-                _mainWindow.Closed += (s, e) =>
-                {
-                    SingleInstance.Dispose();
-                };
-            }
+            Dispatcher.UIThread.Post(() => StartMainWindow(desktop, splash), DispatcherPriority.Background);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void StartMainWindow(IClassicDesktopStyleApplicationLifetime desktop, SplashWindow splash)
+    {
+        _mainWindow = new MainWindow();
+        _viewModel = new MainViewModel();
+        _mainWindow.DataContext = _viewModel;
+        desktop.MainWindow = _mainWindow;
+
+        _mainWindow.Closed += (s, e) => _viewModel?.Cleanup();
+
+        var showCmd = new RelayCommand(_ => ShowMainWindow());
+
+        var closeCmd = new RelayCommand(async _ =>
+        {
+            if (!_mainWindowReady) return;
+
+            if (_viewModel!.HasAnyRunningInstances)
+            {
+                var wasHidden = !_mainWindow!.IsVisible;
+                if (wasHidden)
+                {
+                    _mainWindow.Show();
+                    _mainWindow.WindowState = WindowState.Normal;
+                }
+
+                var result = await MessageBox.ShowAsync(
+                    _mainWindow,
+                    LocalizedStrings.Instance.ConfirmCloseMessage,
+                    LocalizedStrings.Instance.ConfirmCloseTitle,
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (wasHidden)
+                {
+                    _mainWindow.Hide();
+                }
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                await _viewModel.StopAllInstancesAsync();
+            }
+
+            _mainWindow!.IsClosingFromTray = true;
+            _mainWindow.Close();
+        });
+
+        var icons = TrayIcon.GetIcons(this);
+        if (icons != null && icons.Count > 0)
+        {
+            _trayIcon = icons[0];
+
+            _trayIcon.Clicked += (s, e) =>
+            {
+                var now = DateTime.Now;
+                var diff = now - _lastClickTime;
+                _lastClickTime = now;
+
+                if (diff.TotalMilliseconds < 500)
+                    ShowMainWindow();
+            };
+
+            BuildTrayMenu(closeCmd);
+
+            LocalizedStrings.CultureChanged += () => BuildTrayMenu(closeCmd);
+
+            _viewModel.RequestTrayMenuRebuild += () => BuildTrayMenu(closeCmd);
+
+            _viewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ViewModels.MainViewModel.WindowTitleWithProfile) ||
+                    e.PropertyName == nameof(ViewModels.MainViewModel.SelectedProfile))
+                {
+                    BuildTrayMenu(closeCmd);
+                }
+            };
+        }
+
+        _mainWindow.PropertyChanged += (s, e) =>
+        {
+            if (e.Property == Window.WindowStateProperty && _mainWindow!.WindowState == WindowState.Minimized && MainWindow.MinimizeToTray)
+            {
+                _mainWindow.Hide();
+            }
+        };
+
+        if (SingleInstance != null)
+        {
+            SingleInstance.ActivateRequested += () => Dispatcher.UIThread.Post(ShowMainWindow);
+
+            _mainWindow.Closed += (s, e) =>
+            {
+                SingleInstance.Dispose();
+            };
+        }
+
+        _ = RevealMainWindowAsync(splash);
+    }
+
+    private async Task RevealMainWindowAsync(SplashWindow splash)
+    {
+        await Task.WhenAny(_mainWindow!.StartupLayoutReady, Task.Delay(SplashTimeout));
+
+        _mainWindowReady = true;
+        _mainWindow.Show();
+        splash.Close();
+
+        if (SingleInstance?.ConsumePendingActivation() == true)
+            ShowMainWindow();
+    }
+
+    private void ShowMainWindow()
+    {
+        if (!_mainWindowReady) return;
+
+        _mainWindow!.Show();
+        _mainWindow.WindowState = WindowState.Normal;
+        _mainWindow.Activate();
     }
 
     private string GetTrayMenuItemText(string baseText)
@@ -231,12 +242,7 @@ public partial class App : Application
             _trayMenu.Items.Clear();
         }
 
-        _trayMenu.Items.Add(new NativeMenuItem(LocalizedStrings.Instance.Show) { Command = new CommandAdapter(new RelayCommand(_ =>
-        {
-            _mainWindow!.Show();
-            _mainWindow.WindowState = WindowState.Normal;
-            _mainWindow.Activate();
-        })) });
+        _trayMenu.Items.Add(new NativeMenuItem(LocalizedStrings.Instance.Show) { Command = new CommandAdapter(new RelayCommand(_ => ShowMainWindow())) });
         _trayMenu.Items.Add(new NativeMenuItemSeparator());
 
         var trayInstances = _viewModel?.RunningInstances.Where(i => i.IsRunning).ToList() ?? new();

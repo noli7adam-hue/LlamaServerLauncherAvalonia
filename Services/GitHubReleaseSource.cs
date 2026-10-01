@@ -397,12 +397,21 @@ public static class GitHubReleaseSource
         await LlamaCppDownloadService.SharedHttpLock.WaitAsync(ct);
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Head, $"{WebBase}/{owner}/{repo}/releases/latest");
-            using var response = await _httpNoRedirect.SendAsync(request, ct);
-            var location = response.Headers.Location?.ToString();
-            if (string.IsNullOrEmpty(location)) return null;
-            var tag = ExtractTagFromReleaseUrl(location);
-            return string.IsNullOrEmpty(tag) ? null : tag;
+            var url = new Uri($"{WebBase}/{owner}/{repo}/releases/latest");
+            for (var hop = 0; hop < 5; hop++)
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Head, url);
+                using var response = await _httpNoRedirect.SendAsync(request, ct);
+                var location = response.Headers.Location;
+                if (location == null) return null;
+                if (!location.IsAbsoluteUri)
+                    location = new Uri(url, location);
+
+                var tag = ExtractTagFromReleaseUrl(location.ToString());
+                if (!string.IsNullOrEmpty(tag)) return tag;
+                url = location;
+            }
+            return null;
         }
         finally
         {

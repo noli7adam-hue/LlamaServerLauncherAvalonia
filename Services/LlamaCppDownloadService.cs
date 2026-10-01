@@ -113,7 +113,7 @@ public class LlamaCppDownloadService
 
     static LlamaCppDownloadService()
     {
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("LlamaServerLauncher/1.0");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd($"LlamaServerLauncher/{Models.AppInfo.Version}");
     }
 
     public LlamaCppDownloadService(string? appDataPath = null)

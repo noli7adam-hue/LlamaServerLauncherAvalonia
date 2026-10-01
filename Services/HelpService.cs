@@ -22,8 +22,8 @@ public static class HelpService
     public const string TopicBenchmarks = "help-benchmarks";
     public const string TopicScenarios = "help-scenarios";
 
-    private const string ReadmeEn = "https://github.com/pytraveler/LlamaServerLauncherAvalonia/blob/main/README.md";
-    private const string ReadmeRu = "https://github.com/pytraveler/LlamaServerLauncherAvalonia/blob/main/README_ru.md";
+    private const string ReadmeEn = AppInfo.RepoUrl + "/blob/main/README.md";
+    private const string ReadmeRu = AppInfo.RepoUrl + "/blob/main/README_ru.md";
 
     public static string Load(string topic)
     {

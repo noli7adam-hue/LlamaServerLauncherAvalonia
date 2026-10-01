@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using LlamaServerLauncher.Models;
 using LlamaServerLauncher.Resources;
@@ -43,6 +44,10 @@ public partial class HistoryTextBox : UserControl
         set => SetValue(ShowClearButtonProperty, value);
     }
 
+    private const double HistoryMenuBorder = 2;
+    private const double HistoryMenuItemChrome = 22;
+    private const double HistoryMenuWindowMargin = 16;
+
     private IDisposable? _textBinding;
     private ArgType? _filterType;
     private string _lastValidText = "";
@@ -52,7 +57,7 @@ public partial class HistoryTextBox : UserControl
     {
         InitializeComponent();
         InnerTextBox.TextChanged += OnInnerTextChanged;
-        ClearButton.IsVisible = ShowClearButton;
+        UpdateClearButton();
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -72,7 +77,12 @@ public partial class HistoryTextBox : UserControl
         else if (change.Property == IsEnabledProperty)
             InnerTextBox.IsEnabled = change.GetNewValue<bool>();
         else if (change.Property == ShowClearButtonProperty)
-            ClearButton.IsVisible = change.GetNewValue<bool>();
+            UpdateClearButton();
+    }
+
+    private void UpdateClearButton()
+    {
+        ClearButton.IsVisible = ShowClearButton && !string.IsNullOrEmpty(InnerTextBox.Text);
     }
 
     private void ClearButton_Click(object? sender, RoutedEventArgs e)
@@ -99,6 +109,7 @@ public partial class HistoryTextBox : UserControl
 
     private void OnInnerTextChanged(object? sender, TextChangedEventArgs e)
     {
+        UpdateClearButton();
         if (_suppressValidation) return;
         // Only Int/Double arguments are filtered; everything else accepts free text.
         if (_filterType != ArgType.Int && _filterType != ArgType.Double) return;
@@ -151,15 +162,27 @@ public partial class HistoryTextBox : UserControl
         var values = vm.GetRecentValues(PropertyName ?? "");
         if (values == null || values.Count == 0) return;
 
-        var flyout = new MenuFlyout();
+        var minWidth = Math.Max(0, Bounds.Width - HistoryMenuBorder);
+        var maxWidth = minWidth;
+        var topLevel = TopLevel.GetTopLevel(this);
+        var origin = topLevel != null ? this.TranslatePoint(new Point(0, 0), topLevel) : null;
+        if (topLevel != null && origin != null)
+            maxWidth = Math.Max(minWidth, topLevel.Bounds.Width - origin.Value.X - HistoryMenuWindowMargin - HistoryMenuBorder);
+
+        var flyout = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedLeft };
+        flyout.FlyoutPresenterClasses.Add("history");
         foreach (var v in values)
         {
             var val = v;
-            var item = new MenuItem { Header = val };
+            var header = new TextBlock { Text = val, TextTrimming = TextTrimming.PathSegmentEllipsis };
+            var item = new MenuItem { Header = header, MinWidth = minWidth, MaxWidth = maxWidth };
+            header.Measure(Size.Infinity);
+            if (header.DesiredSize.Width > maxWidth - HistoryMenuItemChrome)
+                ToolTip.SetTip(item, val);
             item.Click += (_, _) => InnerTextBox.Text = val;
             flyout.Items.Add(item);
         }
 
-        flyout.ShowAt((Control)sender!);
+        flyout.ShowAt(InnerTextBox);
     }
 }

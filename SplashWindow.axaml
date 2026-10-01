@@ -1,0 +1,14 @@
+<Window x:Class="LlamaServerLauncher.SplashWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Corrallama"
+        Icon="/llama-launcher.ico"
+        Width="320" Height="320"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        WindowDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent">
+    <Image Source="/Resources/Images/splash.png" Stretch="Uniform"/>
+</Window>

@@ -1,7 +1,7 @@
-<h1 align="center">LlamaServerLauncher</h1>
+<h1 align="center">Corrallama</h1>
 
 <p align="center">
-  <img src="docs/images/preview.png" alt="LlamaServerLauncher" width="350" />
+  <img src="docs/images/preview.png" alt="Corrallama" width="350" />
 </p>
 
 <p align="center">

@@ -38,8 +38,6 @@ public class AppUpdateService
     {
         Timeout = TimeSpan.FromMinutes(10)
     };
-    private const string RepoOwner = "pytraveler";
-    private const string RepoName = "LlamaServerLauncherAvalonia";
 
     private readonly Action<string>? _log;
 
@@ -55,7 +53,7 @@ public class AppUpdateService
         try
         {
             var result = await GitHubReleaseSource.GetReleasesAsync(
-                RepoOwner, RepoName, 1, freshFor: freshFor, forceRefresh: forceRefresh);
+                Models.AppInfo.RepoOwner, Models.AppInfo.RepoName, 1, freshFor: freshFor, forceRefresh: forceRefresh);
 
             var source = result.UsedWebFallback ? "github.com pages" : result.Origin.ToString();
             if (result.Releases.Count == 0)

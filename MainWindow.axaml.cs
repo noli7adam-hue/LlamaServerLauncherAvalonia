@@ -41,6 +41,10 @@ public partial class MainWindow : Window
 
     public static MainWindow? Instance { get; private set; }
 
+    private readonly TaskCompletionSource _startupLayout = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public Task StartupLayoutReady => _startupLayout.Task;
+
     public static bool MinimizeToTray { get; set; } = true;
 
     public IntPtr WindowHandle => _windowHandle;
@@ -56,6 +60,11 @@ public partial class MainWindow : Window
         {
             this.GetValue(Window.WindowStateProperty);
             InitializeProfileComboBox();
+            if (_viewModel != null)
+            {
+                _viewModel.WindowLeft = Position.X;
+                _viewModel.WindowTop = Position.Y;
+            }
         };
         
         if (this is AvaloniaObject ao)
@@ -119,13 +128,14 @@ public partial class MainWindow : Window
                 return await WindowsFileDialogs.OpenFolderDialogAsync(title);
             };
 
-            await vm.InitializeAsync();
-            await LoadWindowPositionAsync();
-
-            UpdateNavPaneForWidth();
-
-            if (_viewModel.AutoFitHeight)
-                EnableAutoFitHeight();
+            try
+            {
+                await vm.InitializeAsync(ApplyStartupLayoutAsync);
+            }
+            finally
+            {
+                _startupLayout.TrySetResult();
+            }
 
             RebuildMcpImportMenu();
 
@@ -149,6 +159,23 @@ public partial class MainWindow : Window
                     System.Diagnostics.Debug.WriteLine($"Auto-start scenario failed: {ex.Message}");
                 }
             }, token);
+        }
+    }
+
+    private async Task ApplyStartupLayoutAsync()
+    {
+        try
+        {
+            await LoadWindowPositionAsync();
+
+            UpdateNavPaneForWidth();
+
+            if (_viewModel?.AutoFitHeight == true)
+                EnableAutoFitHeight();
+        }
+        finally
+        {
+            _startupLayout.TrySetResult();
         }
     }
 
@@ -204,7 +231,7 @@ public partial class MainWindow : Window
         {
             Dispatcher.UIThread.Post(() =>
             {
-                if (_viewModel == null) return;
+                if (_viewModel == null || !_startupLayout.Task.IsCompleted) return;
                 if (_viewModel.AutoFitHeight && !_isAutoFitActive)
                     EnableAutoFitHeight();
                 else if (!_viewModel.AutoFitHeight && _isAutoFitActive)
@@ -310,12 +337,30 @@ public partial class MainWindow : Window
                 mainGrid.RowDefinitions[2].Height = GridLength.Auto;
 
         _originalMinHeight = MinHeight;
-        MinHeight = 0;
+        if (IsVisible)
+        {
+            MinHeight = 0;
+        }
+        else
+        {
+            Height = double.NaN;
+            Loaded -= ReleaseMinHeightOnLoaded;
+            Loaded += ReleaseMinHeightOnLoaded;
+        }
         ApplyAutoFitHeightLimit();
         CanResize = false;
         SizeToContent = SizeToContent.Height;
         _isAutoFitActive = true;
         ClampAutoFitPosition();
+    }
+
+    private void ReleaseMinHeightOnLoaded(object? sender, RoutedEventArgs e)
+    {
+        Loaded -= ReleaseMinHeightOnLoaded;
+        if (!_isAutoFitActive) return;
+
+        _originalMinHeight = MinHeight;
+        MinHeight = 0;
     }
 
     private void ApplyAutoFitHeightLimit()
@@ -338,6 +383,7 @@ public partial class MainWindow : Window
 
         var scaling = screen.Scaling > 0 ? screen.Scaling : 1.0;
         var frameHeight = (FrameSize?.Height ?? Height) * scaling;
+        if (double.IsNaN(frameHeight)) return;
         var area = screen.WorkingArea;
 
         if (Position.Y + frameHeight <= area.Y + area.Height)
@@ -449,14 +495,15 @@ public partial class MainWindow : Window
             
             if (left >= 0 && left < 3000 && top >= 0 && top < 2000)
             {
+                WindowStartupLocation = WindowStartupLocation.Manual;
                 Position = new PixelPoint((int)left, (int)top);
+                _viewModel.WindowLeft = Position.X;
+                _viewModel.WindowTop = Position.Y;
             }
         }
 
         _viewModel.WindowWidth = Width;
         _viewModel.WindowHeight = Height;
-        _viewModel.WindowLeft = Position.X;
-        _viewModel.WindowTop = Position.Y;
 
         var mainGrid = this.FindControl<Grid>("MainGrid");
         if (mainGrid != null && mainGrid.RowDefinitions.Count > 4)

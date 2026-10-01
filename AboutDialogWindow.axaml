@@ -10,7 +10,7 @@
         Background="{DynamicResource WindowBackgroundBrush}">
     <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" HorizontalAlignment="Center">
         <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,10">
-            <TextBlock Text="Llama Server Launcher" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock Text="Corrallama" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
             <TextBlock Text="{Binding InstalledVersionText}" HorizontalAlignment="Center" Opacity="0.8" Margin="0,2,0,0"/>
             <TextBlock Text="{Binding AvailableVersionText}" IsVisible="{Binding ShowAvailableVersion}"
                        HorizontalAlignment="Center" Foreground="{DynamicResource LinkForegroundBrush}" FontSize="11" Margin="0,2,0,0"/>
@@ -33,7 +33,7 @@
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
             <TextBlock Text="{Binding Localized.AppRepository}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-            <Button Content="LlamaServerLauncherAvalonia" Click="OpenAppRepository" Cursor="Hand"
+            <Button Content="{Binding RepoName}" Click="OpenAppRepository" Cursor="Hand"
                     Foreground="{DynamicResource LinkForegroundBrush}" Background="Transparent" BorderThickness="0"
                     Padding="0" VerticalAlignment="Center"/>
         </StackPanel>

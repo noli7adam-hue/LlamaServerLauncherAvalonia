@@ -400,7 +400,7 @@ public class LogStreamService : IDisposable
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<title>Log Stream — llama-server launcher</title>
+<title>Log Stream - Corrallama</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;color:#d4d4d4;font-family:'Consolas','SF Mono','Monaco','Menlo',monospace;font-size:13px;height:100vh;display:flex;flex-direction:column}
@@ -432,7 +432,7 @@ body{background:#1a1a2e;color:#d4d4d4;font-family:'Consolas','SF Mono','Monaco',
 </head>
 <body>
 <div class='header'>
-<h1>llama-server launcher — Log Stream</h1>
+<h1>Corrallama - Log Stream</h1>
 <div class='status'><span class='dot' id='dot'></span><span id='statusText'>Connecting...</span></div>
 <span class='client-count' id='clientCount'></span>
 <div class='controls'>

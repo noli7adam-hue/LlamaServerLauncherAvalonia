@@ -9,6 +9,7 @@ public partial class AboutDialogWindow : Window
 {
     public LocalizedStrings Localized => LocalizedStrings.Instance;
     public string AboutTitle => LocalizedStrings.Instance.AboutTitle;
+    public string RepoName => Models.AppInfo.RepoName;
     public string InstalledVersionText => string.Format(LocalizedStrings.Instance.AboutVersion, Models.AppInfo.Version);
     public bool ShowAvailableVersion { get; private set; }
     public string AvailableVersionText { get; private set; } = "";
@@ -35,7 +36,7 @@ public partial class AboutDialogWindow : Window
 
     private void OpenAppRepository(object? sender, RoutedEventArgs e)
     {
-        OpenUrl("https://github.com/pytraveler/LlamaServerLauncherAvalonia");
+        OpenUrl(Models.AppInfo.RepoUrl);
     }
 
     private void OpenMethelinaProfile(object? sender, RoutedEventArgs e)

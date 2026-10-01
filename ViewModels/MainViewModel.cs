@@ -1680,10 +1680,12 @@ public class MainViewModel : INotifyPropertyChanged, IOnDemandProxyHost
         UpdateCurrentCommand();
     }
 
-    public async Task InitializeAsync()
+    public async Task InitializeAsync(Func<Task>? settingsApplied = null)
     {
         var settings = await _configService.LoadAppSettingsAsync();
         await ApplyAppSettingsAsync(settings);
+        if (settingsApplied != null)
+            await settingsApplied();
         _ = LoadDetectedBrowsersAsync();
         _logService.Configure(settings.MaxLogFiles, settings.MaxLogSizeBytes);
         _ = CheckDefaultLlamaVersionAsync();

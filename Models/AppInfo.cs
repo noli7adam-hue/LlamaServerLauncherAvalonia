@@ -5,6 +5,10 @@ namespace LlamaServerLauncher.Models;
 
 public static class AppInfo
 {
+    public const string RepoOwner = "pytraveler";
+    public const string RepoName = "LlamaServerLauncherAvalonia";
+    public const string RepoUrl = "https://github.com/" + RepoOwner + "/" + RepoName;
+
     public static string Version { get; } = ResolveVersion();
 
     private static string ResolveVersion()
